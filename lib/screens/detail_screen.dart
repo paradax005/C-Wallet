@@ -1,5 +1,8 @@
+import 'package:cwallet/utils/config.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import "package:http/http.dart" as http;
+import 'dart:convert';
 
 class DetailScreen extends StatefulWidget {
   final String id;
@@ -24,6 +27,9 @@ class DetailScreen extends StatefulWidget {
 }
 
 class _DetailScreenState extends State<DetailScreen> {
+  late double balance;
+  late String userid;
+
   TextEditingController idController = TextEditingController();
   TextEditingController amountController = TextEditingController();
   TextEditingController convertAmountController = TextEditingController();
@@ -33,20 +39,38 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   void initState() {
     super.initState();
+    idController.text = widget.id;
     SharedPreferences.getInstance().then((prefs) {
-      idController.text = widget.id;
+      balance = prefs.getDouble("balance")!;
+      userid = prefs.getString("userid")!;
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    idController.clear();
+    amountController.clear();
+    convertAmountController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () {
+          buyCrypto();
+        },
         label: const Text(" Buy "),
         icon: const Icon(Icons.shopping_basket),
       ),
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+          icon: const Icon(Icons.arrow_back_ios),
+        ),
         title: Text(widget.name),
         centerTitle: true,
       ),
@@ -139,5 +163,109 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
       ),
     );
+  }
+
+  buyCrypto() {
+    double amountToPurchase = double.parse(convertAmountController.text);
+
+    if (balance >= amountToPurchase) {
+      Map<String, dynamic> currenciesData = {
+        "currencyId": widget.id,
+        "quantity": amountToPurchase,
+      };
+
+      Map<String, String> headers = {
+        "Content-Type": "application/json; charset=UTF-8"
+      };
+
+      http
+          .post(Uri.http(Config.baseUrl, "/api/currencies/$userid"),
+              headers: headers, body: json.encode(currenciesData))
+          .then(
+        (http.Response response) {
+          if (response.statusCode == 200) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text("Dismiss"),
+                    ),
+                  ],
+                  title: const Text("Congrats"),
+                  content: Text(
+                    "You just bought ${amountController.text} ${widget.name} [${widget.code}]",
+                  ),
+                );
+              },
+            );
+          } else if (response.statusCode == 403) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                  title: const Text("Warnings"),
+                  content: const Text(
+                    "No Available Funds !",
+                  ),
+                );
+              },
+            );
+          } else {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                  title: const Text("Information"),
+                  content: const Text(
+                    "An error has occurred, please try again later!",
+                  ),
+                );
+              },
+            );
+          }
+        },
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text("OK"),
+              ),
+            ],
+            title: const Text("Warnings"),
+            content: const Text(
+              "No Available Funds !",
+            ),
+          );
+        },
+      );
+    }
   }
 }

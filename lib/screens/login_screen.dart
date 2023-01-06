@@ -25,6 +25,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    usernameController.clear();
+    idController.clear();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -118,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         SharedPreferences.getInstance().then((prefs) {
           prefs.setDouble("balance", userResponse['balance'].toDouble());
+          prefs.setString("userid", userResponse['_id']);
 
           Navigator.pushReplacementNamed(context, "/home");
         });
