@@ -1,3 +1,5 @@
+import 'package:cwallet/screens/detail_screen.dart';
+import 'package:cwallet/screens/home_screen.dart';
 import 'package:cwallet/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -12,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: true,
+      debugShowCheckedModeBanner: false,
       title: 'CWallet App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -20,7 +22,11 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (BuildContext context) {
           return const LoginScreen();
-        }
+        },
+        '/home': (BuildContext context) {
+          return const HomeScreen();
+        },
+        
       },
     );
   }
